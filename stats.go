@@ -39,9 +39,9 @@ func (s SortType) String() string {
 	case Worst:
 		return "Worst"
 	case LastSuccTime:
-		return "Last Success"
+		return "Last-Success"
 	case LastFailTime:
-		return "Last Fail"
+		return "Last-Fail"
 	}
 
 	return ""
@@ -51,19 +51,31 @@ func NewStatistics() Statistics {
 	return Statistics{
 		sortType: Success,
 		values:   []*stats{},
+		unitMode: 0,
 	}
 }
 
 type Statistics struct {
 	values   []*stats
 	sortType SortType
+	unitMode int
 }
 
 func (s *Statistics) SetNextSort() {
 	s.sortType++
+	// fmt.Printf("s.sortTyp: %d\n", s.sortType)
+
 	if int(s.sortType) >= len(s.keys()) {
 		s.sortType = 0
 	}
+}
+
+func (s *Statistics) SetNextUnit() {
+	s.unitMode += 1
+	if s.unitMode >= 4 {
+		s.unitMode = 0
+	}
+	// fmt.Printf("UnitMode: %d\n", s.unitMode)
 }
 
 func (s Statistics) keys() []SortType {
@@ -107,7 +119,8 @@ func (s Statistics) Less(i, j int) bool {
 func (s Statistics) getMaxLength(key SortType) int {
 	length := len(key.String())
 	for _, v := range s.values {
-		if l := len(v.values()[key]); length < l {
+		// if l := len(v.values()[key]); length < l {
+		if l := len(v.values(s.unitMode)[key]); length < l {
 			length = l
 		}
 	}
@@ -202,7 +215,9 @@ func (s stats) average() time.Duration {
 	return time.Duration(int(s.total) / s.success)
 }
 
-func (s stats) values() map[SortType]string {
+// func (s stats) values(mode *Statistics.unitMode) map[SortType]string {
+// func (s stats) values(mode *Statistics.unitMode) map[SortType]string {
+func (s stats) values(mode int) map[SortType]string {
 	v := make(map[SortType]string)
 	v[Host] = s.hostname
 	if s.hostname != s.ip {
@@ -212,10 +227,28 @@ func (s stats) values() map[SortType]string {
 	v[Success] = fmt.Sprintf("%d", s.success)
 	v[Fail] = fmt.Sprintf("%d", s.fail)
 	v[Loss] = fmt.Sprintf("%5.1f%%", s.loss())
-	v[Last] = durationFormater(s.last)
-	v[Avg] = durationFormater(s.average())
-	v[Best] = durationFormater(s.min)
-	v[Worst] = durationFormater(s.max)
+
+	// switch mode {
+	// case 0:
+	// 	v[Last] = fmt.Sprintf("1")
+	// case 1:
+	// 	v[Last] = fmt.Sprintf("10")
+	// case 2:
+	// 	v[Last] = fmt.Sprintf("100")
+	// case 3:
+	// 	v[Last] = durationFormater(s.last)
+	// }
+
+	v[Last] = durationFormater(s.last, mode)
+	v[Avg] = durationFormater(s.average(), mode)
+	v[Best] = durationFormater(s.min, mode)
+	v[Worst] = durationFormater(s.max, mode)
+
+	// default
+	// v[Last] = durationFormater(s.last)
+	// v[Avg] = durationFormater(s.average())
+	// v[Best] = durationFormater(s.min)
+	// v[Worst] = durationFormater(s.max)
 
 	lastSuccTime := "-"
 	lastFailTime := "-"
@@ -234,7 +267,32 @@ func (s stats) values() map[SortType]string {
 	return v
 }
 
-func durationFormater(duration time.Duration) string {
+// org
+// func durationFormater(duration time.Duration) string {
+// 	// fmt.Printf("UnitMode: %d\n", UnitMode)
+// 	// fmt.Printf("UnitMode: %d\n", s.unitMode)
+
+// 	if duration.Microseconds() < 1000 {
+// 		return fmt.Sprintf("%3dµs", duration.Microseconds())
+// 	} else if duration.Milliseconds() < 1000 {
+// 		return fmt.Sprintf("%3dms", duration.Milliseconds())
+// 	} else {
+// 		return fmt.Sprintf("%3.0fs", duration.Seconds())
+// 	}
+// }
+
+// new
+func durationFormater(duration time.Duration, mode int) string {
+	switch mode {
+	case 1:
+		return fmt.Sprintf("%3dµs", duration.Microseconds())
+	case 2:
+		return fmt.Sprintf("%3dms", duration.Milliseconds())
+	case 3:
+		return fmt.Sprintf("%3.0fs", duration.Seconds())
+	}
+
+	// default mode: 0
 	if duration.Microseconds() < 1000 {
 		return fmt.Sprintf("%3dµs", duration.Microseconds())
 	} else if duration.Milliseconds() < 1000 {

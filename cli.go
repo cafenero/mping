@@ -100,6 +100,7 @@ func Run(hostnames []string, _maxRtt, size, count int, quiet bool, _title string
 	p.MaxRTT = time.Millisecond * time.Duration(maxRtt)
 	p.RunLoop()
 
+	// print ping result
 	if !quiet {
 		go func() {
 			t := time.NewTicker(time.Millisecond * time.Duration(refreshTime))
@@ -108,12 +109,14 @@ func Run(hostnames []string, _maxRtt, size, count int, quiet bool, _title string
 				case <-isTickEnd:
 					return
 				case <-t.C:
+					// print redraw
 					screenRedraw()
 				}
 			}
 		}()
 	}
 
+	// ping error handling
 	go func() {
 		idleCount := 0
 		for {
@@ -151,6 +154,7 @@ func Run(hostnames []string, _maxRtt, size, count int, quiet bool, _title string
 		}
 	}()
 
+	// key input listener goroutine
 	go func() {
 		for {
 			ev := termbox.PollEvent()
@@ -183,7 +187,15 @@ func Run(hostnames []string, _maxRtt, size, count int, quiet bool, _title string
 					if currentPage < 0 {
 						currentPage = pageLength
 					}
+
+				case 'u':
+					// unit: auto -> s -> ms -> us -> auto -> ...
+					// UnitMode += 1
+					// fmt.Printf("UnitMode: %d\n", UnitMode)
+					statTable.SetNextUnit()
+					// fmt.Printf("statTable.unitMode: %d\n", statTable.unitMode)
 				}
+
 			case termbox.EventInterrupt:
 				isTickEnd <- true
 				close(done)

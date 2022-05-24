@@ -73,7 +73,7 @@ func screenRedraw() {
 		tbPrint(0, 2+i, coldef, coldef, v)
 	}
 
-	tbPrint(0, h-1, coldef, coldef, "q: quit program, n: next page, p: previous page, s: sort, r: reverse mode, R: count reset")
+	tbPrint(0, h-1, coldef, coldef, "q: quit program, n: next page, p: previous page, s: sort, r: reverse mode, R: count reset, u: change unit")
 	termbox.Flush()
 }
 
@@ -100,7 +100,7 @@ func drawstatTable() (string, []string) {
 	// print header
 	msg := []string{}
 	for i, h := range headers {
-		msg = append(msg, fmt.Sprintf("%-"+strconv.Itoa(length[i])+"s", h))
+		msg = append(msg, fmt.Sprintf("%"+strconv.Itoa(length[i])+"s", h))
 	}
 	header := strings.Join(msg, "  ")
 	body := []string{}
@@ -113,7 +113,11 @@ func drawstatTable() (string, []string) {
 
 	// print body
 	for _, _stats := range statTable.values {
-		v := _stats.values()
+
+		//
+
+		v := _stats.values(statTable.unitMode)
+
 		msg = []string{}
 		for i, h := range headers {
 			msg = append(msg, fmt.Sprintf("%"+strconv.Itoa(length[i])+"s", v[h]))
